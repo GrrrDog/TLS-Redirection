@@ -45,7 +45,7 @@ Why TLS redirection, but not the virtual host confusion? The latter is part of a
 - SSLv3 (no SNI)**
 - HTTP/2 connection sharing**
 
-* - Chrome hasn't supported CN field since 58
+CN* - Chrome hasn't supported CN field since 58
 
 ** - depends on configuration of web server and browser
 
@@ -136,7 +136,7 @@ The following table shows the behavior of various applications: whether they ret
 
 SMTP
 
-| Software                             | Content reflection | No disconnect on erros |
+| Software                             | Content reflection | No disconnect on errors |
 |:-------------------------------------|:-------------------|:------------------------|
 | Exim                                 | -                  | -                       |
 | Postfix                              | -                  | +                       |
@@ -149,7 +149,7 @@ SMTP
 
 POP3
 
-| Software               | Content reflection | No disconnect on erros |
+| Software               | Content reflection | No disconnect on errors |
 |:-----------------------|:-------------------|:------------------------|
 | Dovecot                | -                  | -                       |
 | QMail                  | -                  | -                       |
@@ -165,7 +165,7 @@ POP3
 
 IMAP
 
-| Software         | Content reflection | No disconnect on erros |
+| Software         | Content reflection | No disconnect on errors |
 |:-----------------|:-------------------|:------------------------|
 | Dovecot          | -                  | -                       |
 | IMail            | +                  | +                       |
