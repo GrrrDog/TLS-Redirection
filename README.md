@@ -45,7 +45,8 @@ Why TLS redirection, but not the virtual host confusion? The latter is part of a
 - SSLv3 (no SNI)**
 - HTTP/2 connection sharing**
 
-*CN - Chrome hasn't supported CN field since 58*
+* - Chrome hasn't supported CN field since 58
+
 ** - depends on configuration of web server and browser
 
 
@@ -54,7 +55,7 @@ When an HTTP request comes to the TLS-brother server instead of the Attacked ser
 
 In case the web server does not have a virtual host with the name of the Attacked server, the response comes from the default virtual host
 
-? Logic of falback
+? Logic of fallback
 
 ## Attacks (MitM)
 ### Techniques
@@ -101,7 +102,7 @@ If the TLS-brother server has an XSS vulnerability, the attacker can force the u
 
 ![](imgs/xss.png)
 
-?Видео
+? Video
 
 #### Self-XSS
 If the TLS-brother server has a self-xss vulnerability (linked to a cookie), the attacker can expose his or her cookie from the TLS-brother server to the Attacked server via cookie forcing technique. Thus, during the TLS redirection attack, the HTTP request that goes to the TLS-brother server will contain cookies from the attacker, which will allow to exploit the self-XSS vulnerability in the context of the Attacked server successfully.
@@ -163,6 +164,7 @@ POP3
 
 
 IMAP
+
 | Software         | Content reflection | No disconnect on erros |
 |:-----------------|:-------------------|:------------------------|
 | Dovecot          | -                  | -                       |
