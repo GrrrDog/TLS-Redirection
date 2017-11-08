@@ -2,7 +2,7 @@
 
 [Russian-version of this document](README_RU.md)
 
-**The goal** of this document is to raise awareness of a little-known attack, TLS redirection (and Virtual Host Confusion), and to bring all the information related to this topic together.
+**The goal** of this document is to raise awareness of a little-known attack, TLS redirection / Virtual Host Confusion, and to bring all the information related to this topic together.
 
 ## Intro
 
@@ -22,7 +22,7 @@ This also helps exploit vulnerabilities due to the incorrect use of certain tech
 
 More information on the attack techniques below.
 
-Why TLS redirection, but not the virtual host confusion? The latter is part of a larger issue that grows out of the SSL /TLS architecture (for example, an attack can be performed not only with the HTTP protocol).
+Why TLS redirection, but not the Virtual Host Confusion? The latter is part of a larger issue that grows out of the SSL/TLS architecture (for example, an attack can be performed not only with the HTTP protocol). So TLS redirection covers wider range of attacks including Virtual Host Confusion.
 
 ## Terms
 - Attacked Host/Server (HostA(ttacked) is the server under attack.
@@ -31,7 +31,7 @@ Why TLS redirection, but not the virtual host confusion? The latter is part of a
 - Same-Certificate Policy (similar to the Same Origin Policy) indicates that SSL/TLS provides the ability to authenticate the destination host to a certain degree of accuracy due to TLS specifics.
 
 ## Docs
-- [Network-based Origin Confusion Attacks against HTTPS Virtual Hosting](http://antoine.delignat-lavaud.fr/doc/www15.pdf) by Antoine Delignat-Lavaud and Karthikeyan Bhargavan
+- [Network-based Origin Confusion Attacks against HTTPS Virtual Hosting](http://antoine.delignat-lavaud.fr/doc/www15.pdf) by Antoine Delignat-Lavaud and Karthikeyan Bhargavan (!)
 - [The BEAST Wins Again: Why TLS Keeps Failing to Protect HTTP](https://www.blackhat.com/docs/us-14/materials/us-14-Delignat-The-BEAST-Wins-Again-Why-TLS-Keeps-Failing-To-Protect-HTTP.pdf) by Antoine Delignat-Lavaud
 - [Demos from "The BEAST Wins Again..."](https://bh.ht.vc/) by Antoine Delignat-Lavaud
 - [When HTTPS can’t protect you](When_HTTPS_can’t_protect_you_YSTS.pdf) by [@antyurin](https://twitter.com/antyurin)
@@ -54,8 +54,6 @@ CN* - Chrome hasn't supported CN field since 58
 When an HTTP request comes to the TLS-brother server instead of the Attacked server, the SNI of the TLS request and the Host header of the request itself will indicate the name of the Attacked server.
 
 In case the web server does not have a virtual host with the name of the Attacked server, the response comes from the default virtual host
-
-? Logic of fallback
 
 ## Attacks (MitM)
 ### Techniques
@@ -119,7 +117,7 @@ If the TLS-brother server returns CORS headers, then, in case of successful TLS 
 
 Thus, a successful attack is possible only if it is possible to change certain headers, critical to the Attacked server.
 
-#### Protocol smuggling (reflection)
+#### Protocol smuggling (reflection XSS)
 There are many text-based (and not only) protocols. Many of them allow "interaction" from the HTTP protocol, some protocols return all (or part) of the sent HTTP requests back. In this case, browsers parse the responses from such services, since they consider them as HTTP 0.9 (i.e. the body of the response without headers).
 
 If the TLS-brother server has a service that "reflects" the request back, then it can be used to attack.
@@ -182,16 +180,38 @@ FTP(S)
 does anyone use it with tls?
 
 #### Active content substitution
-Usually a page consists of html (pictures) and active content, like JS, CSS, plugin objects , which can be embedded in the page, and can be located in separate files.
+Usually a page consists of html (with pictures) and active content, like JS, CSS, plugin objects, which can be embedded in the page and can be located in separate files.
 
 In this attack, TLS redirection is used for redirecting only the requests to the active content. That means the user's browser receives html code from the Attacked server, and JS script, for example, from the TLS-brother server. Of course, to perform the attack, the attacker must be able to control the content of the JS script on the TLS-brother server.
-To circumvent some of this attack limitations, you can use RPO techniques
+To circumvent some of this attack limitations, you can use Relative Path Overwrite or similar techniques.
+
+It is worth mentioning some facts, which make this attack more reliable, about behavior of browsers, if they execute the file from script element (<script src="lib.js"></script>) with various headers or not:
+- no browser cares about Content-Disposition header
+- IE doesn't care about Content-Type header (without nosniff)
+- FF, Chrome, Edge dont't execute script only if Content-Type is from "image" family (without nosniff)
+- with X-Content-Type-Options, all the browsers requires correct Content-Type
 
 [WPAD](#adversary_proxy) attack or [Cache poisoning attack](#cache_poisoning_attack) might be useful here.
 
 ![](imgs/acs.png)
 
 ? video
+
+#### JavaScript libs (and Protocol smuggling)
+Nowadays web applications are full of JS libs. Modern approaches of development suppose that JS frameworks stealthy and asynchronous get content from the web server and disply it to a user(like AJAX, Single Page Application). If JavaScript of the web application on the Attacked server uses "insecure" functions, we can perform TLS redirection attack.
+
+For example, there are the TLS-brother server that has a "reflection" service and the Attacked server that uses JQuery.load function to get content from the Attacked server. The [load function](http://api.jquery.com/load/) fetches content from a server and sets it to an appropriate element, so scripts from the content are executed.
+The attacker uses cookie forcing technique and sets an additional cookie in the user's browser for the Attacked server. The cookie contains XSS payload. The attacker forces the user's browser to open the Attacked server. When the whole page is loaded by the user, the attacker turns on TLS redirection attack. The JQuery from the Attacked server tries to get some content using load function, this request is redirected to the TLS-brother server. The service "reflects" the request back, but again for the user's browser it's HTTP/0.9 response. As Jquery doesn't care about Content-Type, the payload from the cookie will be executed. 
+
+Similar attacks can be performed if the attacker controls the content of files on the TLS-brother server.
+
+Potentially vulnerable features:
+JQuery's load
+JQuery's get, post, ajax (old version, with specific Content-Types)
+HTML import (test is required)
+
+[WPAD](#adversary_proxy) attack or [Cache poisoning attack](#cache_poisoning_attack) might be useful here.
+
 
 #### HTTPS 2 HTTP redirect
 If the TLS-brother server redirects the request to the HTTP protocol, then it will be possible to capture and steal some information from it (token, for example ) after it is redirected.
@@ -216,3 +236,5 @@ Certificate pinning allows you to bind a server name to a specific certificate, 
 - Default virtual host value can be set blank at the web server level;
 - Group resources (shared certificate) by the level of security;
   - Locate web servers with user content in a separate domain (not in a subdomain) and a separate certificate.
+- Hardening (like HSTS, SRI, Content sniffing) can prevent or limit some types of attacks
+
