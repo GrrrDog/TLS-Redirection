@@ -235,7 +235,7 @@ It is worth mentioning some facts, which make this attack more reliable, about b
 - FF, Chrome, Edge dont't execute script only if Content-Type is from "image" family (without nosniff)
 - with X-Content-Type-Options, all the browsers requires correct Content-Type
 
-[WPAD](#adversary_proxy) attack or [Cache poisoning attack](#cache_poisoning_attack) might be useful here.
+[WPAD](#adversary-proxy) attack or [Cache poisoning attack](#cache-poisoning-attack) might be useful here.
 
 ![](imgs/acs.png)
 
@@ -254,7 +254,7 @@ Potentially vulnerable features:
 - JQuery's get, post, ajax (old version, with specific Content-Types)
 - HTML import (test is required)
 
-[WPAD](#adversary_proxy) attack or [Cache poisoning attack](#cache_poisoning_attack) might be useful here.
+[WPAD](#adversary-proxy) attack or [Cache poisoning attack](#cache-poisoning-attack) might be useful here.
 
 #### HTTPS 2 HTTP redirect
 If the TLS-brother server redirects the request to the HTTP protocol, then it will be possible to capture and steal some information from it (token, for example ) after it is redirected.
