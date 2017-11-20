@@ -20,18 +20,18 @@
             - [Cache poisoning attack](#cache-poisoning-attack)
         - [Tools (?)](#tools-)
     - [Exploitation techniques](#exploitation-techniques)
-            - [File uploading (SDRF)](#file-uploading-sdrf)
-            - [XSS](#xss)
-            - [Self-XSS](#self-xss)
-            - [Flash and crossdomain.xml](#flash-and-crossdomainxml)
-            - [CORS](#cors)
-            - [Protocol smuggling (CrossProtocol XSS)](#protocol-smuggling-crossprotocol-xss)
-            - [Active content substitution](#active-content-substitution)
-            - [JavaScript libs (and Protocol smuggling)](#javascript-libs-and-protocol-smuggling)
-            - [HTTPS 2 HTTP redirect](#https-2-http-redirect)
-            - [Reverse Proxy misrouting](#reverse-proxy-misrouting)
-            - [Client Cert auth "bypass"](#client-cert-auth-bypass)
-            - [Certificate Pinning](#certificate-pinning)
+        - [File uploading (SDRF)](#file-uploading-sdrf)
+        - [XSS](#xss)
+        - [Self-XSS](#self-xss)
+        - [Flash and crossdomain.xml](#flash-and-crossdomainxml)
+        - [CORS](#cors)
+        - [Protocol smuggling (CrossProtocol XSS)](#protocol-smuggling-crossprotocol-xss)
+        - [Active content substitution](#active-content-substitution)
+        - [JavaScript libs (and Protocol smuggling)](#javascript-libs-and-protocol-smuggling)
+        - [HTTPS 2 HTTP redirect](#https-2-http-redirect)
+        - [Reverse Proxy misrouting](#reverse-proxy-misrouting)
+        - [Client Cert auth "bypass"](#client-cert-auth-bypass)
+        - [Certificate Pinning](#certificate-pinning)
     - [Protection](#protection)
 
 <!-- /TOC -->
@@ -135,36 +135,36 @@ After that, the attacker forces the user to send a request to the page (at the A
 
 ## Exploitation techniques
 
-#### File uploading (SDRF)
+### File uploading (SDRF)
 If any user-generated content (for example, HTML pages) can be uploaded to the TLS-brother server, then an attacker can execute JS code in the context of the Attacked server at the user's browser using the TLS redirection attack.
 
 Moreover, the attacker can attack auto update services on the user’s host if he or she can place a file using the same path (on the TLS-brother server) over which the service tries to download the file from the Attacked server.
 
 [Video: Virtual host confusion exploit against Dropbox](https://www.youtube.com/watch?v=CkOGKi0pKdk)
 
-#### XSS
+### XSS
 If the TLS-brother server has an XSS vulnerability, the attacker can force the user's browser to send a request with XSS payload for the TLS-brother server to the Attacked server, perform a TLS redirection attack, and redirect the request to the TLS-brother server. TLS-brother server processes this request (using default virtual host) and responds with the XSS payload. However, for the user's browser, this response comes from the Attacked server and, therefore, Javascript will be executed in the context of the Attacked server.  
 
 ![](imgs/xss.png)
 
 [Video: TLS Redirection / Virtual Host Confusion and XSS](https://youtu.be/9nr0YJb3wdQ)
 
-#### Self-XSS
+### Self-XSS
 If the TLS-brother server has a self-xss vulnerability (linked to a cookie), the attacker can expose his or her cookie from the TLS-brother server to the Attacked server via cookie forcing technique. Thus, during the TLS redirection attack, the HTTP request that goes to the TLS-brother server will contain cookies from the attacker, which will allow to exploit the self-XSS vulnerability in the context of the Attacked server successfully.
 
 ![](imgs/selfxss.png)
 
-#### Flash and crossdomain.xml
+### Flash and crossdomain.xml
 If the TLS-brother server contains crossdomain.xml with * (or if the attacker has access to the trusted name zone), then the attacker can place a special SWF file that will interact with the Attacked server on his or her web server. When the user’s browser executes the SWF file, the user's Flash sends a request for crossdomain.xml file, which is redirected to the TLS-brother server using the TLS redirection attack. The  Flash sees the permission for interaction (* is in the file) and caches it, thus allowing subsequent interaction with the Attacked server.
 
 ![](imgs/cx.png)
 
-#### CORS
+### CORS
 If the TLS-brother server returns CORS headers, then, in case of successful TLS redirection attack, the attacker can send only one request to the Attacked server (with the modified headers/ method, depending on the CORS permissions) and cannot read the response from the Attacked server. This is due to the fact that the CORS headers are checked for each response and, in case of failure, the browser resets the CORS cache.
 
 Thus, a successful attack is possible only if it is possible to change certain headers, critical to the Attacked server.
 
-#### Protocol smuggling (CrossProtocol XSS)
+### Protocol smuggling (CrossProtocol XSS)
 There are many text-based (and not only) protocols. Many of them allow "interaction" from the HTTP protocol, some protocols return all (or part) of the sent HTTP requests back. In this case, browsers parse the responses from such services, since they consider them as HTTP 0.9 (i.e. the body of the response without headers).
 
 If the TLS-brother server has a service that "reflects" the request back, then it can be used to attack.
@@ -223,7 +223,7 @@ IMAP
 | Cyrus            | + (till space)     | +                       |
 
 
-#### Active content substitution
+### Active content substitution
 Usually a page consists of html (with pictures) and active content, like JS, CSS, plugin objects, which can be embedded in the page and can be located in separate files.
 
 In this attack, TLS redirection is used for redirecting only the requests to the active content. That means the user's browser receives html code from the Attacked server, and JS script, for example, from the TLS-brother server. Of course, to perform the attack, the attacker must be able to control the content of the JS script on the TLS-brother server.
@@ -241,7 +241,7 @@ It is worth mentioning some facts, which make this attack more reliable, about b
 
 [Video: TLS Redirection / Virtual Host Confusion and Active content substitution](https://youtu.be/WLxGHmyBNpE)
 
-#### JavaScript libs (and Protocol smuggling)
+### JavaScript libs (and Protocol smuggling)
 Nowadays web applications are full of JS libs. Modern approaches to development implicate that JS frameworks get content from the web server stealthy and asynchronously and display it to a user (like AJAX, Single Page Application, and so on). If the JavaScript of a web application on the Attacked server uses "insecure" functions, we can perform the TLS redirection attack.
 
 For example, there is the TLS-brother server with a "reflection" service and the Attacked server that uses JQuery.load function to get content from the Attacked server. The [load function](http://api.jquery.com/load/) fetches content from a server and sets it to an appropriate element, so scripts from the content are executed.
@@ -256,20 +256,20 @@ Potentially vulnerable features:
 
 [WPAD](#adversary-proxy) attack or [Cache poisoning attack](#cache-poisoning-attack) might be useful here.
 
-#### HTTPS 2 HTTP redirect
+### HTTPS 2 HTTP redirect
 If the TLS-brother server redirects the request to the HTTP protocol, then it will be possible to capture and steal some information from it (token, for example ) after it is redirected.
 
 [Video: Virtual host confusion exploit against Pinterest](https://www.youtube.com/watch?v=h0VhFlTP2xw)
 
-#### Reverse Proxy misrouting
+### Reverse Proxy misrouting
 The case when TLS-brother is a reverse proxy and the attacker can control the routing of HTTP requests on the reverse proxy.
 
 [Video: Virtual host confusion exploit against Akamai](https://www.youtube.com/watch?v=YKD-i4HbbGg)
 
-#### Client Cert auth "bypass"
+### Client Cert auth "bypass"
 If a system uses client authentication using a TLS certificate, then, in case of a TLS redirection attack, the client will not send its client certificate, because the TLS-brother server will not request it.
 
-#### Certificate Pinning
+### Certificate Pinning
 Certificate pinning allows you to bind a server name to a specific certificate, but if both the TLS-brother and the Attacked server use the same certificate, attacker can perform a TLS-redirection attack and, possibly, somehow affect the behavior of the client.
 
 ## Protection
