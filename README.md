@@ -1,7 +1,5 @@
 # TLS Redirection (and Virtual Host Confusion)
 
-[Russian-version of this document](README_RU.md)
-
 **The goal** of this document is to raise awareness of a little-known group of attacks, TLS redirection / Virtual Host Confusion, and to bring all the information related to this topic together.
 
 <!-- TOC -->
@@ -64,7 +62,7 @@ More information on the attack techniques below.
 
 ## Docs
 
-The goal of the document is to bring all the information together (main ideas, techiques), but not to explain everything in details. So in order to fully understand the attack, it's highly recommended to read all these white papers and presentations.
+The goal of the document is to bring all the information together (main ideas, techiques), but not to explain everything in details. So in order to fully understand the attacks, it's highly recommended to read all these white papers and presentations.
 
 - [Network-based Origin Confusion Attacks against HTTPS Virtual Hosting](http://antoine.delignat-lavaud.fr/doc/www15.pdf) by Antoine Delignat-Lavaud and Karthikeyan Bhargavan
 - [The BEAST Wins Again: Why TLS Keeps Failing to Protect HTTP](https://www.blackhat.com/docs/us-14/materials/us-14-Delignat-The-BEAST-Wins-Again-Why-TLS-Keeps-Failing-To-Protect-HTTP.pdf) by Antoine Delignat-Lavaud
