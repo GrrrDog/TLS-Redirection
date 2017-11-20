@@ -26,6 +26,7 @@
         - [Protocol smuggling (CrossProtocol XSS)](#protocol-smuggling-crossprotocol-xss)
         - [Active content substitution](#active-content-substitution)
         - [JavaScript libs (and Protocol smuggling)](#javascript-libs-and-protocol-smuggling)
+        - [HTTP libs (and Protocol smuggling)](#http-libs-and-protocol-smuggling)
         - [HTTPS 2 HTTP redirect](#https-2-http-redirect)
         - [Reverse Proxy misrouting](#reverse-proxy-misrouting)
         - [Client Cert auth "bypass"](#client-cert-auth-bypass)
@@ -253,6 +254,15 @@ Potentially vulnerable features:
 - HTML import (test is required)
 
 [WPAD](#adversary-proxy) attack or [Cache poisoning attack](#cache-poisoning-attack) might be useful here.
+
+![](imgs/jq.png)
+
+### HTTP libs (and Protocol smuggling)
+In some cases an attacker can perform TLS redirection between servers (API, for example) and influence business logic.
+
+For example, if the victim checks auth using Curl (for 200 OK) on the Attcked server REST API, [Protocol smuggling (CrossProtocol XSS)](#protocol-smuggling-crossprotocol-xss) technique could be used, because Curl supports [HTTP/0.9 protocol](https://github.com/curl/curl/issues/467) and returns "CURLE_OK".
+
+Similar attacks can be performed if an attacker controls the responses from the TLS-brother server.
 
 ### HTTPS 2 HTTP redirect
 If the TLS-brother server redirects the request to the HTTP protocol, then it will be possible to capture and steal some information from it (token, for example ) after it is redirected.
