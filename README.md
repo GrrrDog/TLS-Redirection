@@ -2,7 +2,39 @@
 
 [Russian-version of this document](README_RU.md)
 
-**The goal** of this document is to raise awareness of a little-known attack, TLS redirection / Virtual Host Confusion, and to bring all the information related to this topic together.
+**The goal** of this document is to raise awareness of a little-known group of attacks, TLS redirection / Virtual Host Confusion, and to bring all the information related to this topic together.
+
+<!-- TOC -->
+
+- [TLS Redirection (and Virtual Host Confusion)](#tls-redirection-and-virtual-host-confusion)
+    - [Intro](#intro)
+    - [Terms](#terms)
+    - [Docs](#docs)
+    - [Technical details](#technical-details)
+        - [Certificate/TLS features](#certificatetls-features)
+        - [Vitrual host fallback](#vitrual-host-fallback)
+    - [Attacks (MitM)](#attacks-mitm)
+        - [Techniques](#techniques)
+            - [MitM + iptables redirection](#mitm--iptables-redirection)
+            - [Adversary proxy](#adversary-proxy)
+            - [Cache poisoning attack](#cache-poisoning-attack)
+        - [Tools (?)](#tools-)
+    - [Exploitation techniques](#exploitation-techniques)
+            - [File uploading (SDRF)](#file-uploading-sdrf)
+            - [XSS](#xss)
+            - [Self-XSS](#self-xss)
+            - [Flash and crossdomain.xml](#flash-and-crossdomainxml)
+            - [CORS](#cors)
+            - [Protocol smuggling (CrossProtocol XSS)](#protocol-smuggling-crossprotocol-xss)
+            - [Active content substitution](#active-content-substitution)
+            - [JavaScript libs (and Protocol smuggling)](#javascript-libs-and-protocol-smuggling)
+            - [HTTPS 2 HTTP redirect](#https-2-http-redirect)
+            - [Reverse Proxy misrouting](#reverse-proxy-misrouting)
+            - [Client Cert auth "bypass"](#client-cert-auth-bypass)
+            - [Certificate Pinning](#certificate-pinning)
+    - [Protection](#protection)
+
+<!-- /TOC -->
 
 ## Intro
 
@@ -11,6 +43,8 @@ The main goal of TLS is to protect an encapsulated protocol from MITM attacks. T
 However, there are various types of certificates. For example, certificates with wildcard names. It means that several servers may use a shared certificate.
 
 And it should be kept in mind that TLS works at the application level and does not know anything about the underlying protocols (IP, transport protocol). Thus, when a client connects to a server, the attacker can perform a MITM attack and redirect the client to another server (with a shared certificate). At the same time, it is not possible for client to find out which specific server it is connected.
+
+Why "TLS redirection"? The initial name of the attacks is Virtual Host Confusion. Virtual Host Confusion is a part of a larger issue that stems from the SSL/TLS architecture (for example, an attack can be performed not only with the HTTP protocol). So TLS redirection covers a wider range of attacks including Virtual Host Confusion. Depending on circumstances you can use any of these terms.
 
 **What are the consequences?**
 
@@ -22,22 +56,23 @@ This also helps exploit vulnerabilities due to the incorrect use of certain tech
 
 More information on the attack techniques below.
 
-Why TLS redirection, but not the Virtual Host Confusion? The latter is part of a larger issue that grows out of the SSL/TLS architecture (for example, an attack can be performed not only with the HTTP protocol). So TLS redirection covers wider range of attacks including Virtual Host Confusion.
-
 ## Terms
 - Attacked Host/Server (HostA(ttacked) is the server under attack.
-- TLS-brother Host/Server (HostB(rother)) is a server with a certificate or configuration, which includes the Attacked server due to TLS specific.
+- TLS-brother Host/Server (HostB(rother)) is a server with a certificate or configuration, which includes the Attacked server due to [TLS specifics](#certificatetls-features).
 - Shared (Overlapping) Certificate is a certificate that includes both the Attacked server and the TLS-brother server names.
-- Same-Certificate Policy (similar to the Same Origin Policy) indicates that SSL/TLS provides the ability to authenticate the destination host to a certain degree of accuracy due to TLS specifics.
+- Same-Certificate Policy (similar to the Same Origin Policy) indicates that SSL/TLS provides the ability to authenticate the destination host to a certain degree of accuracy due to [TLS specifics](#certificatetls-features).
 
 ## Docs
-- [Network-based Origin Confusion Attacks against HTTPS Virtual Hosting](http://antoine.delignat-lavaud.fr/doc/www15.pdf) by Antoine Delignat-Lavaud and Karthikeyan Bhargavan (!)
+
+The goal of the document is to bring all the information together (main ideas, techiques), but not to explain everything in details. So in order to fully understand the attack, it's highly recommended to read all these white papers and presentations.
+
+- [Network-based Origin Confusion Attacks against HTTPS Virtual Hosting](http://antoine.delignat-lavaud.fr/doc/www15.pdf) by Antoine Delignat-Lavaud and Karthikeyan Bhargavan
 - [The BEAST Wins Again: Why TLS Keeps Failing to Protect HTTP](https://www.blackhat.com/docs/us-14/materials/us-14-Delignat-The-BEAST-Wins-Again-Why-TLS-Keeps-Failing-To-Protect-HTTP.pdf) by Antoine Delignat-Lavaud
 - [Demos from "The BEAST Wins Again..."](https://bh.ht.vc/) by Antoine Delignat-Lavaud
-- [When HTTPS can’t protect you](When_HTTPS_can’t_protect_you_YSTS.pdf) by [@antyurin](https://twitter.com/antyurin)
+- [MITM Attacks on HTTPS: Another Perspective](https://www.slideshare.net/GreenD0g/mitm-attacks-on-https-another-perspective/) by [@antyurin](https://twitter.com/antyurin)
 
 ## Technical details
-### Certificate/TLS features/restrictions
+### Certificate/TLS features
 - port is ignored
 - issued for multiple hosts (SAN and CN*)
 - wildcard name
@@ -48,7 +83,6 @@ Why TLS redirection, but not the Virtual Host Confusion? The latter is part of a
 CN* - Chrome hasn't supported CN field since 58
 
 ** - depends on configuration of web server and browser
-
 
 ### Vitrual host fallback
 When an HTTP request comes to the TLS-brother server instead of the Attacked server, the SNI of the TLS request and the Host header of the request itself will indicate the name of the Attacked server.
@@ -65,7 +99,7 @@ When the Attacked server and the TLS-brother server have different IPs (or ports
 #### Adversary proxy
 By attacking WPAD, the attacker can force a user’s browser to use different proxy servers for different domain names using the PAC file. As the attacker controls the proxy server, he or she can redirect requests from the user’s browser.
 
-Before the publication of several papers in 2016, attackers could set the rules at the URL level (Chrome, FF), and not just at the domain name level, which allowed more sophisticated TLS redirection attacks, for example, redirection and substitution of only parts of pages (Active Content Substitution).
+Before the publication of several papers in 2016, attackers could set the rules at the URL level (Chrome, FF), and not just at the domain name level, which allowed more sophisticated TLS redirection attacks, for example, redirection and substitution of only parts of pages (Active Content Substitution attack). However, the technique is still useful for attacks at the domain name level. 
 
 Chrome - fixed. FF - not fixed (last checked in Jan 2017).
 
@@ -113,7 +147,7 @@ If the TLS-brother server has an XSS vulnerability, the attacker can force the u
 
 ![](imgs/xss.png)
 
-? Video
+[Video: TLS Redirection / Virtual Host Confusion and XSS](https://youtu.be/9nr0YJb3wdQ)
 
 #### Self-XSS
 If the TLS-brother server has a self-xss vulnerability (linked to a cookie), the attacker can expose his or her cookie from the TLS-brother server to the Attacked server via cookie forcing technique. Thus, during the TLS redirection attack, the HTTP request that goes to the TLS-brother server will contain cookies from the attacker, which will allow to exploit the self-XSS vulnerability in the context of the Attacked server successfully.
@@ -130,7 +164,7 @@ If the TLS-brother server returns CORS headers, then, in case of successful TLS 
 
 Thus, a successful attack is possible only if it is possible to change certain headers, critical to the Attacked server.
 
-#### Protocol smuggling (reflection XSS)
+#### Protocol smuggling (CrossProtocol XSS)
 There are many text-based (and not only) protocols. Many of them allow "interaction" from the HTTP protocol, some protocols return all (or part) of the sent HTTP requests back. In this case, browsers parse the responses from such services, since they consider them as HTTP 0.9 (i.e. the body of the response without headers).
 
 If the TLS-brother server has a service that "reflects" the request back, then it can be used to attack.
@@ -140,7 +174,7 @@ In the case of other browsers, the response is parsed as text/plain, which does 
 
 ![](imgs/pr.png)
 
-? video
+[Video: TLS Redirection / Virtual Host Confusion and CrossProtocol XSS](https://youtu.be/Uc99yQsdFs0)
 
 The following table shows the behavior of various applications: whether they return requests and whether they break connections due to a large number of errors (the tests are not clear enough, since they were conducted on random hosts on the Internet).
 
@@ -189,9 +223,6 @@ IMAP
 | Cyrus            | + (till space)     | +                       |
 
 
-FTP(S)
-does anyone use it with tls?
-
 #### Active content substitution
 Usually a page consists of html (with pictures) and active content, like JS, CSS, plugin objects, which can be embedded in the page and can be located in separate files.
 
@@ -208,15 +239,15 @@ It is worth mentioning some facts, which make this attack more reliable, about b
 
 ![](imgs/acs.png)
 
-? video
+[Video: TLS Redirection / Virtual Host Confusion and Active content substitution](https://youtu.be/WLxGHmyBNpE)
 
 #### JavaScript libs (and Protocol smuggling)
-Nowadays web applications are full of JS libs. Modern approaches of development suppose that JS frameworks stealthy and asynchronous get content from the web server and disply it to a user(like AJAX, Single Page Application). If JavaScript of the web application on the Attacked server uses "insecure" functions, we can perform TLS redirection attack.
+Nowadays web applications are full of JS libs. Modern approaches to development implicate that JS frameworks get content from the web server stealthy and asynchronously and display it to a user (like AJAX, Single Page Application, and so on). If the JavaScript of a web application on the Attacked server uses "insecure" functions, we can perform the TLS redirection attack.
 
-For example, there are the TLS-brother server that has a "reflection" service and the Attacked server that uses JQuery.load function to get content from the Attacked server. The [load function](http://api.jquery.com/load/) fetches content from a server and sets it to an appropriate element, so scripts from the content are executed.
-The attacker uses cookie forcing technique and sets an additional cookie in the user's browser for the Attacked server. The cookie contains XSS payload. The attacker forces the user's browser to open the Attacked server. When the whole page is loaded by the user, the attacker turns on TLS redirection attack. The JQuery from the Attacked server tries to get some content using load function, this request is redirected to the TLS-brother server. The service "reflects" the request back, but again for the user's browser it's HTTP/0.9 response. As Jquery doesn't care about Content-Type, the payload from the cookie will be executed. 
+For example, there is the TLS-brother server with a "reflection" service and the Attacked server that uses JQuery.load function to get content from the Attacked server. The [load function](http://api.jquery.com/load/) fetches content from a server and sets it to an appropriate element, so scripts from the content are executed.
+An attacker uses the cookie forcing technique and sets an additional cookie in a user's browser for the Attacked server. The cookie contains XSS payload. An attacker forces a user's browser to open the Attacked server. When the whole page is loaded by a user, an attacker turns on the TLS redirection attack. The JQuery from the Attacked server tries to get some content using the load function; this request is redirected to the TLS-brother server. The service "reflects" the request back, but again for a user's browser it is HTTP/0.9 response. As Jquery doesn't care about Content-Type, the payload from the cookie will be executed. 
 
-Similar attacks can be performed if the attacker controls the content of files on the TLS-brother server.
+Similar attacks can be performed if an attacker controls the content of files on the TLS-brother server.
 
 Potentially vulnerable features:
 - JQuery's load
@@ -247,5 +278,5 @@ Certificate pinning allows you to bind a server name to a specific certificate, 
 - Default virtual host value can be set blank at the web server level;
 - Group resources (shared certificate) by the level of security;
   - Locate web servers with user content in a separate domain (not in a subdomain) and a separate certificate.
-- Hardening (like HSTS, SRI, Content sniffing) can prevent or limit some types of attacks
+- Hardening (like HSTS, SRI, Content sniffing, etc) can prevent or limit some types of attacks
 
