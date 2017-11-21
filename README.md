@@ -68,7 +68,7 @@ The goal of the document is to bring all the information together (main ideas, t
 - [Network-based Origin Confusion Attacks against HTTPS Virtual Hosting](http://antoine.delignat-lavaud.fr/doc/www15.pdf) by Antoine Delignat-Lavaud and Karthikeyan Bhargavan
 - [The BEAST Wins Again: Why TLS Keeps Failing to Protect HTTP](https://www.blackhat.com/docs/us-14/materials/us-14-Delignat-The-BEAST-Wins-Again-Why-TLS-Keeps-Failing-To-Protect-HTTP.pdf) by Antoine Delignat-Lavaud
 - [Demos from "The BEAST Wins Again..."](https://bh.ht.vc/) by Antoine Delignat-Lavaud
-- [MITM Attacks on HTTPS: Another Perspective](https://www.slideshare.net/GreenD0g/mitm-attacks-on-https-another-perspective/) by [@antyurin](https://twitter.com/antyurin)
+- [MITM Attacks on HTTPS: Another Perspective](https://www.slideshare.net/GreenD0g/mitm-attacks-on-https-another-perspective/) ([SpeakerDeck version](https://speakerdeck.com/greendog/mitm-attacks-on-https-another-perspective)) by [@antyurin](https://twitter.com/antyurin)
 
 ## Technical details
 ### Certificate/TLS features
